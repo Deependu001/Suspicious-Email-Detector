@@ -1,0 +1,56 @@
+From: Security Team <security@example.com>
+To: Bob User <bob@example.com>
+Subject: Security Links
+Date: Sun, 16 Aug 2026 11:30:00 +0530
+Message-ID: <url-step6@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="url-boundary"
+
+--url-boundary
+Content-Type: text/plain; charset="utf-8"
+
+Hello Bob,
+
+Please review the following links:
+
+https://example.com/security
+https://example.com/login
+https://example.com/security
+
+Thanks,
+Security Team
+
+--url-boundary
+Content-Type: text/html; charset="utf-8"
+
+<html>
+<body>
+    <p>Hello Bob,</p>
+
+    <p>
+        <a href="https://example.com/security">
+            Security Center
+        </a>
+    </p>
+
+    <p>
+        <a href="https://example.com/login">
+            Login Portal
+        </a>
+    </p>
+
+    <p>
+        <a href="https://example.org/account">
+            Account Information
+        </a>
+    </p>
+
+    <p>
+        <a href="mailto:support@example.com">
+            Contact Support
+        </a>
+    </p>
+</body>
+</html>
+
+--url-boundary--

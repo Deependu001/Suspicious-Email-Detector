@@ -1,0 +1,19 @@
+From: Alice Security <alice@example.com>
+To: Bob User <bob@example.com>
+Cc: Security Team <security@example.com>
+Subject: Test Security Notification
+Date: Sun, 16 Aug 2026 10:00:00 +0530
+Reply-To: support@example.com
+Message-ID: <test-message-001@example.com>
+Return-Path: <alice@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Hello Bob,
+
+This is a test email for the Suspicious Email Detection project.
+
+Please review this message.
+
+Regards,
+Alice Security

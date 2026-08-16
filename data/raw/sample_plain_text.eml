@@ -1,0 +1,40 @@
+From: Alice Security <alice@example.com>
+To: Bob User <bob@example.com>
+Subject: Quarterly Security Review
+Date: Sun, 16 Aug 2026 10:30:00 +0530
+Message-ID: <step4-demo@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mixed-boundary"
+
+--mixed-boundary
+Content-Type: multipart/alternative; boundary="alternative-boundary"
+
+--alternative-boundary
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+SGVsbG8gQm9iLAoKWW91ciBxdWFydGVybHkgc2VjdXJpdHkgcmV2aWV3IGlzIGNvbXBsZXRlLgpQ
+bGVhc2UgcmV2aWV3IHRoZSBhdHRhY2hlZCByZXBvcnQgYnkgRnJpZGF5LgoK4Kao4Ka/4Kaw4Ka+
+4Kaq4Kak4KeN4Kak4Ka+IOCmr+CmvuCmmuCmvuCmhyDgprjgpqvgprLgpq3gpr7gpqzgp4cg4Ka4
+4Kau4KeN4Kaq4Kao4KeN4KaoIOCmueCmr+CmvOCnh+Cmm+Cnh+ClpAoKVGhlIHNlY3VyaXR5IHRl
+YW0gd2lsbCBuZXZlciBhc2sgeW91IHRvIHNoYXJlIHlvdXIgcGFzc3dvcmQuCgpSZWdhcmRzLApB
+bGljZSBTZWN1cml0eSBUZWFtCg==
+
+--alternative-boundary
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: base64
+
+PGh0bWw+PGJvZHk+PHA+SGVsbG8gQm9iLDwvcD48cD5Zb3VyIHF1YXJ0ZXJseSBzZWN1cml0eSBy
+ZXZpZXcgaXMgY29tcGxldGUuPC9wPjwvYm9keT48L2h0bWw+
+
+--alternative-boundary--
+
+--mixed-boundary
+Content-Type: text/plain; name="internal-note.txt"
+Content-Disposition: attachment; filename="internal-note.txt"
+Content-Transfer-Encoding: base64
+
+VGhpcyBpcyBhdHRhY2htZW50IGNvbnRlbnQgYW5kIG11c3QgTk9UIGJlIHRyZWF0ZWQgYXMgdGhl
+IGVtYWlsIGJvZHku
+
+--mixed-boundary--

@@ -1,0 +1,6 @@
+From: sender@example.com
+Subject: Minimal Test
+MIME-Version: 1.0
+Content-Type: text/plain
+
+Minimal email for parser testing.

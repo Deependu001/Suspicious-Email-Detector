@@ -1,0 +1,36 @@
+From: Security Team <security@example.com>
+To: Bob User <bob@example.com>
+Subject: HTML Security Notification
+Date: Sun, 16 Aug 2026 11:00:00 +0530
+Message-ID: <html-step5@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="html-boundary"
+
+--html-boundary
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+Hello Bob,
+
+Your security notification is ready.
+
+Please review the message carefully.
+
+Regards,
+Security Team
+
+--html-boundary
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <body>
+    <h1>Security Notification</h1>
+    <p>Hello Bob,</p>
+    <p>Your security notification is <strong>ready</strong>.</p>
+    <p>Please review the message carefully.</p>
+    <p>Regards,<br>Security Team</p>
+  </body>
+</html>
+
+--html-boundary--

@@ -1,0 +1,10 @@
+From: "Alice, Security" <alice@example.com>
+To: Bob User <bob@example.com>, "John Smith" <john@example.com>
+Cc: Security Team <security@example.com>, Admin <admin@example.com>
+Subject: Complex Header Test
+Date: Sun, 16 Aug 2026 10:30:00 +0530
+Message-ID: <complex-header-test@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+This is a test message for complex email headers.
