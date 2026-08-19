@@ -1,0 +1,19 @@
+From: Security Team <security@example.com>
+To: analyst@example.net
+Subject: Authentication Header Test
+Date: Tue, 18 Aug 2026 10:00:00 +0530
+Message-ID: <auth-test-001@example.com>
+Return-Path: <security@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="UTF-8"
+Authentication-Results: mx.example.net; spf=pass smtp.mailfrom=example.com; dkim=pass header.d=example.com; dmarc=pass header.from=example.com
+Received-SPF: pass (mx.example.net: domain of security@example.com designates 192.0.2.10 as permitted sender)
+DKIM-Signature: v=1; a=rsa-sha256; d=example.com; s=mail; c=relaxed/relaxed; h=from:to:subject:date; bh=TESTHASH; b=TESTSIGNATURE
+ARC-Authentication-Results: i=1; mx.example.net; spf=pass; dkim=pass; dmarc=pass
+ARC-Message-Signature: i=1; a=rsa-sha256; d=example.net; s=arc; cv=none; b=TESTSIGNATURE
+ARC-Seal: i=1; a=rsa-sha256; d=example.net; s=arc; cv=none; b=TESTSEAL
+
+This is a test email for authentication-header extraction.
+
+The authentication headers above are test values only.
+They must not be treated as independently verified authentication results.

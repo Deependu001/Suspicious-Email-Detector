@@ -1,0 +1,52 @@
+From: security@example.com
+To: analyst@example.com
+Subject: Attachment Edge Case Test
+Date: Tue, 18 Aug 2026 18:00:00 +0530
+Message-ID: <attachment-edge-case-001@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mixed-boundary"
+
+--mixed-boundary
+Content-Type: multipart/alternative; boundary="alternative-boundary"
+
+--alternative-boundary
+Content-Type: text/plain; charset="utf-8"
+
+This is the normal plain-text email body.
+
+The body must not be treated as an attachment.
+
+--alternative-boundary
+Content-Type: text/html; charset="utf-8"
+
+<html>
+<body>
+<p>This is the normal HTML email body.</p>
+<p>The body must not be treated as an attachment.</p>
+</body>
+</html>
+
+--alternative-boundary--
+
+--mixed-boundary
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="report.pdf"
+Content-Transfer-Encoding: base64
+
+U2VjdXJpdHkgcmVwb3J0IHRlc3QgZGF0YQ==
+
+--mixed-boundary
+Content-Type: application/octet-stream
+Content-Disposition: attachment; filename="unknown-file.bin"
+Content-Transfer-Encoding: base64
+
+VW5rbm93biBmaWxlIHR5cGUgdGVzdCBkYXRh
+
+--mixed-boundary
+Content-Type: application/zip
+Content-Disposition: attachment
+Content-Transfer-Encoding: base64
+
+WklQIG1pc3NpbmcgZmlsZW5hbWUgdGVzdA==
+
+--mixed-boundary--

@@ -5,7 +5,11 @@ from email.parser import BytesParser
 from email.utils import getaddresses
 from pathlib import Path
 
-from app.models.email_models import EmailData
+from app.models.email_models import (
+    EmailAttachment,
+    EmailAuthenticationHeaders,
+    EmailData,
+)
 
 
 class EmailParser:
@@ -49,6 +53,8 @@ class EmailParser:
 
         plain_text_body = self._extract_plain_text_body(message)
         html_body = self._extract_html_body(message)
+        attachments = self._extract_attachments(message)
+        authentication = self._extract_authentication_headers(message)
 
         return EmailData(
             sender=self._get_single_address(message.get("From")),
@@ -69,8 +75,53 @@ class EmailParser:
                 plain_text_body=plain_text_body,
                 html_body=html_body,
             ),
+            attachments=attachments,
+            authentication=authentication,
             headers=headers,
         )
+
+    @staticmethod
+    def _extract_authentication_headers(
+        message,
+    ) -> EmailAuthenticationHeaders:
+        """
+        Extract authentication-related headers from an email message.
+
+        This method only extracts authentication-related headers that
+        are actually present in the email.
+
+        It does NOT independently verify:
+        - SPF
+        - DKIM
+        - DMARC
+        - ARC
+
+        Multiple occurrences of the same header are preserved
+        in their original order.
+        """
+
+        authentication = EmailAuthenticationHeaders()
+
+        header_mapping = {
+            "authentication-results": "authentication_results",
+            "received-spf": "received_spf",
+            "dkim-signature": "dkim_signature",
+            "arc-authentication-results": "arc_authentication_results",
+            "arc-message-signature": "arc_message_signature",
+            "arc-seal": "arc_seal",
+        }
+
+        for header_name, header_value in message.raw_items():
+            field_name = header_mapping.get(header_name.lower())
+
+            if field_name is None:
+                continue
+
+            value = str(header_value)
+
+            getattr(authentication, field_name).append(value)
+
+        return authentication
 
     @staticmethod
     def _iter_body_parts(message):
@@ -88,6 +139,47 @@ class EmailParser:
                 yield from EmailParser._iter_body_parts(child)
         else:
             yield message
+
+    @staticmethod
+    def _extract_attachments(message) -> list[EmailAttachment]:
+        """
+        Extract metadata for attachment MIME parts.
+
+        The actual attachment content is never stored.
+
+        Returns:
+            A list of EmailAttachment objects containing:
+            - filename
+            - content type
+            - decoded size in bytes
+            - content disposition
+        """
+
+        attachments = []
+
+        for part in message.walk():
+            content_disposition = part.get_content_disposition()
+
+            if content_disposition != "attachment":
+                continue
+
+            payload = part.get_payload(decode=True)
+
+            if payload is None:
+                size_bytes = 0
+            else:
+                size_bytes = len(payload)
+
+            attachment = EmailAttachment(
+                filename=part.get_filename(),
+                content_type=part.get_content_type(),
+                size_bytes=size_bytes,
+                content_disposition=content_disposition,
+            )
+
+            attachments.append(attachment)
+
+        return attachments
 
     @staticmethod
     def _extract_plain_text_body(message) -> str | None:

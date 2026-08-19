@@ -1,0 +1,52 @@
+From: security@example.com
+To: analyst@example.com
+Subject: Security Report with Attachments
+Date: Sun, 16 Aug 2026 11:30:00 +0530
+Message-ID: <attachment-test-001@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="mixed-boundary"
+
+--mixed-boundary
+Content-Type: multipart/alternative; boundary="alternative-boundary"
+
+--alternative-boundary
+Content-Type: text/plain; charset="utf-8"
+
+Hello Security Analyst,
+
+Please review the attached security report and spreadsheet.
+
+The report contains information about the recent security assessment.
+
+Regards,
+Security Team
+
+--alternative-boundary
+Content-Type: text/html; charset="utf-8"
+
+<html>
+<body>
+<p>Hello Security Analyst,</p>
+<p>Please review the attached <strong>security report</strong> and spreadsheet.</p>
+<p>The report contains information about the recent security assessment.</p>
+<p>Regards,<br>Security Team</p>
+</body>
+</html>
+
+--alternative-boundary--
+
+--mixed-boundary
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="security-report.pdf"
+Content-Transfer-Encoding: base64
+
+U2VjdXJpdHkgUmVwb3J0IFRlc3QgRG9jdW1lbnQKVGhpcyBpcyBhIHRlc3Qg
+YXR0YWNobWVudCBmb3IgdGhlIHN1c3BpY2lvdXMgZW1haWwgZGV0ZWN0b3Iu
+
+--mixed-boundary
+Content-Type: text/csv
+Content-Disposition: attachment; filename="security-findings.csv"
+Content-Transfer-Encoding: base64
+
+ZmluZGluZ19pZCxzZXZlcml0eSxkZXNjcmlwdGlvbgo=
+--mixed-boundary--
