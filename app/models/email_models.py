@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class EmailAttachment(BaseModel):
@@ -68,3 +69,7 @@ class EmailData(BaseModel):
     )
 
     headers: dict[str, List[str]] = Field(default_factory=dict)
+
+    normalized_headers: dict[str, List[str]] = Field(
+        default_factory=dict
+    )

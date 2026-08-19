@@ -47,9 +47,18 @@ class EmailParser:
         """
 
         headers = {}
+        normalized_headers = {}
 
         for header_name, header_value in message.items():
-            headers.setdefault(header_name, []).append(str(header_value))
+            value = str(header_value)
+
+            headers.setdefault(header_name, []).append(value)
+
+            normalized_name = header_name.lower()
+            normalized_headers.setdefault(
+                normalized_name,
+                [],
+            ).append(value)
 
         plain_text_body = self._extract_plain_text_body(message)
         html_body = self._extract_html_body(message)
@@ -78,6 +87,7 @@ class EmailParser:
             attachments=attachments,
             authentication=authentication,
             headers=headers,
+            normalized_headers=normalized_headers,
         )
 
     @staticmethod
