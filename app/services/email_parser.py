@@ -62,6 +62,14 @@ class EmailParser:
 
         plain_text_body = self._extract_plain_text_body(message)
         html_body = self._extract_html_body(message)
+
+        normalized_plain_text_body = self._normalize_plain_text_body(
+            plain_text_body
+        )
+        normalized_html_body = self._normalize_html_body(
+            html_body
+        )
+
         attachments = self._extract_attachments(message)
         authentication = self._extract_authentication_headers(message)
 
@@ -80,6 +88,8 @@ class EmailParser:
             is_multipart=message.is_multipart(),
             plain_text_body=plain_text_body,
             html_body=html_body,
+            normalized_plain_text_body=normalized_plain_text_body,
+            normalized_html_body=normalized_html_body,
             urls=self._extract_urls(
                 plain_text_body=plain_text_body,
                 html_body=html_body,
@@ -266,6 +276,57 @@ class EmailParser:
                 return content.strip()
 
         return None
+
+    @staticmethod
+    def _normalize_plain_text_body(
+        plain_text_body: str | None,
+    ) -> str | None:
+        """
+        Normalize plain-text body content for downstream analysis.
+
+        The existing extracted body is already MIME-decoded and stripped.
+        Normalization therefore focuses on consistent whitespace handling
+        without changing meaningful Unicode characters or text content.
+        """
+
+        if plain_text_body is None:
+            return None
+
+        normalized = plain_text_body.replace("\r\n", "\n")
+        normalized = normalized.replace("\r", "\n")
+
+        lines = [
+            line.rstrip()
+            for line in normalized.split("\n")
+        ]
+
+        normalized = "\n".join(lines).strip()
+
+        return normalized or None
+
+    @staticmethod
+    def _normalize_html_body(
+        html_body: str | None,
+    ) -> str | None:
+        """
+        Normalize HTML body content for downstream analysis.
+
+        The original HTML structure is preserved. Normalization only
+        standardizes line endings and removes unnecessary surrounding
+        whitespace.
+        """
+
+        if html_body is None:
+            return None
+
+        normalized = html_body.replace("\r\n", "\n")
+        normalized = normalized.replace("\r", "\n")
+        normalized = "\n".join(
+            line.rstrip()
+            for line in normalized.split("\n")
+        ).strip()
+
+        return normalized or None
 
     @staticmethod
     def _extract_urls(

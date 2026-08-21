@@ -60,6 +60,9 @@ class EmailData(BaseModel):
     plain_text_body: Optional[str] = None
     html_body: Optional[str] = None
 
+    normalized_plain_text_body: Optional[str] = None
+    normalized_html_body: Optional[str] = None
+
     urls: List[str] = Field(default_factory=list)
 
     attachments: List[EmailAttachment] = Field(default_factory=list)
