@@ -69,3 +69,11 @@ models/*.pkl
 
 .DS_Store
 Thumbs.db
+
+# ==============================
+# Dataset Files
+# ==============================
+
+data/raw/*.csv
+data/dataset/*.csv
+data/processed/*.csv
