@@ -141,7 +141,9 @@ def test_observations_are_copied(service):
 
     assert explanation is not None
 
-    observations.append("url=http://10.0.0.1/test")
+    observations.append(
+        "url=http://10.0.0.1/test"
+    )
 
     assert explanation.observations == [
         "url=http://192.168.1.10/login"
@@ -151,10 +153,106 @@ def test_observations_are_copied(service):
 def test_explanation_is_deterministic(service):
     result = create_rule_result(
         "URL_ENCODING",
-        observations=["url=https://example.com/login%20now"],
+        observations=[
+            "url=https://example.com/login%20now"
+        ],
     )
 
     first = service.explain_rule(result)
     second = service.explain_rule(result)
+
+    assert first == second
+
+
+def test_ml_probability_low_explanation():
+    explanation = ExplainabilityService.explain_ml_probability(
+        0.15
+    )
+
+    assert explanation.rule_id == "ML_MODEL"
+    assert explanation.category == "ML"
+    assert explanation.message == (
+        "The ML classifier assigned a low "
+        "phishing probability of 15.0%."
+    )
+    assert explanation.observations == [
+        "ml_phishing_probability=0.150000"
+    ]
+
+
+def test_ml_probability_moderate_explanation():
+    explanation = ExplainabilityService.explain_ml_probability(
+        0.50
+    )
+
+    assert explanation.rule_id == "ML_MODEL"
+    assert explanation.category == "ML"
+    assert explanation.message == (
+        "The ML classifier assigned a moderate "
+        "phishing probability of 50.0%."
+    )
+
+
+def test_ml_probability_high_explanation():
+    explanation = ExplainabilityService.explain_ml_probability(
+        0.92
+    )
+
+    assert explanation.rule_id == "ML_MODEL"
+    assert explanation.category == "ML"
+    assert explanation.message == (
+        "The ML classifier assigned a high "
+        "phishing probability of 92.0%."
+    )
+    assert explanation.observations == [
+        "ml_phishing_probability=0.920000"
+    ]
+
+
+def test_ml_probability_zero_is_valid():
+    explanation = ExplainabilityService.explain_ml_probability(
+        0.0
+    )
+
+    assert explanation.message == (
+        "The ML classifier assigned a low "
+        "phishing probability of 0.0%."
+    )
+
+
+def test_ml_probability_one_is_valid():
+    explanation = ExplainabilityService.explain_ml_probability(
+        1.0
+    )
+
+    assert explanation.message == (
+        "The ML classifier assigned a high "
+        "phishing probability of 100.0%."
+    )
+
+
+@pytest.mark.parametrize(
+    "probability",
+    [-0.01, 1.01],
+)
+def test_ml_probability_out_of_range_raises_value_error(
+    probability,
+):
+    with pytest.raises(
+        ValueError,
+        match="ML phishing probability must be between 0.0 and 1.0.",
+    ):
+        ExplainabilityService.explain_ml_probability(
+            probability
+        )
+
+
+def test_ml_probability_explanation_is_deterministic():
+    first = ExplainabilityService.explain_ml_probability(
+        0.823456
+    )
+    second = ExplainabilityService.explain_ml_probability(
+        0.823456
+    )
 
     assert first == second

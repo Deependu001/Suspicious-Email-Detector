@@ -3,7 +3,7 @@ from app.models.rule_models import RuleResult
 
 
 class ExplainabilityService:
-    """Convert triggered rule results into human-readable explanations."""
+    """Convert detection results into human-readable explanations."""
 
     RULE_EXPLANATIONS = {
         "HEADER_FROM_REPLY_TO_MISMATCH": {
@@ -96,7 +96,10 @@ class ExplainabilityService:
         },
     }
 
-    def explain_rule(self, rule_result: RuleResult) -> Explanation | None:
+    def explain_rule(
+        self,
+        rule_result: RuleResult,
+    ) -> Explanation | None:
         """Return an explanation for a triggered known rule."""
 
         if not rule_result.triggered:
@@ -115,3 +118,36 @@ class ExplainabilityService:
             message=rule_definition["message"],
             observations=list(rule_result.observations),
         )
+
+    @staticmethod
+    def explain_ml_probability(
+        probability: float,
+    ) -> Explanation:
+        """Create a human-readable explanation for ML probability."""
+
+        if not 0.0 <= probability <= 1.0:
+            raise ValueError(
+                "ML phishing probability must be between 0.0 and 1.0."
+            )
+
+        percentage = probability * 100.0
+
+        if probability < 0.30:
+            level = "low"
+        elif probability < 0.70:
+            level = "moderate"
+        else:
+            level = "high"
+
+        return Explanation(
+            rule_id="ML_MODEL",
+            category="ML",
+            message=(
+                f"The ML classifier assigned a {level} "
+                f"phishing probability of {percentage:.1f}%."
+            ),
+            observations=[
+                f"ml_phishing_probability={probability:.6f}"
+            ],
+        )
+
