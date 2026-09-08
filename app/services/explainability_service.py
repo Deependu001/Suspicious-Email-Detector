@@ -1,4 +1,7 @@
-from app.models.explainability_models import Explanation
+from app.models.explainability_models import (
+    Explanation,
+    ExplainabilityResult,
+)
 from app.models.rule_models import RuleResult
 
 
@@ -151,3 +154,28 @@ class ExplainabilityService:
             ],
         )
 
+    def generate_explanation(
+        self,
+        risk_score: float,
+        ml_phishing_probability: float,
+        rule_results: list[RuleResult],
+    ) -> ExplainabilityResult:
+        """Generate a combined explanation result."""
+
+        ml_explanation = self.explain_ml_probability(
+            ml_phishing_probability
+        )
+
+        explanations = [ml_explanation]
+
+        for rule_result in rule_results:
+            explanation = self.explain_rule(rule_result)
+
+            if explanation is not None:
+                explanations.append(explanation)
+
+        return ExplainabilityResult(
+            risk_score=risk_score,
+            ml_phishing_probability=ml_phishing_probability,
+            explanations=explanations,
+        )

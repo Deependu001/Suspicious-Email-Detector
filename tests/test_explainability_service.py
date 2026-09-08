@@ -256,3 +256,218 @@ def test_ml_probability_explanation_is_deterministic():
     )
 
     assert first == second
+
+
+def test_generate_explanation_contains_ml_explanation():
+    service = ExplainabilityService()
+
+    result = service.generate_explanation(
+        risk_score=65.6,
+        ml_phishing_probability=0.80,
+        rule_results=[],
+    )
+
+    assert result.risk_score == 65.6
+    assert result.ml_phishing_probability == 0.80
+    assert len(result.explanations) == 1
+
+    assert result.explanations[0].rule_id == "ML_MODEL"
+    assert result.explanations[0].category == "ML"
+
+
+def test_generate_explanation_contains_triggered_rules():
+    service = ExplainabilityService()
+
+    rule_results = [
+        create_rule_result(
+            "HEADER_SPF_FAILURE",
+            observations=["spf_status=fail"],
+        ),
+        create_rule_result(
+            "URL_IP_ADDRESS",
+            observations=["url=http://192.168.1.10/login"],
+        ),
+    ]
+
+    result = service.generate_explanation(
+        risk_score=72.0,
+        ml_phishing_probability=0.85,
+        rule_results=rule_results,
+    )
+
+    assert len(result.explanations) == 3
+
+    assert result.explanations[0].rule_id == "ML_MODEL"
+    assert result.explanations[1].rule_id == "HEADER_SPF_FAILURE"
+    assert result.explanations[2].rule_id == "URL_IP_ADDRESS"
+
+
+def test_generate_explanation_ignores_non_triggered_rules():
+    service = ExplainabilityService()
+
+    rule_results = [
+        create_rule_result(
+            "HEADER_SPF_FAILURE",
+            triggered=False,
+            observations=["spf_status=pass"],
+        ),
+        create_rule_result(
+            "URL_IP_ADDRESS",
+            triggered=True,
+            observations=["url=http://192.168.1.10/login"],
+        ),
+    ]
+
+    result = service.generate_explanation(
+        risk_score=55.0,
+        ml_phishing_probability=0.70,
+        rule_results=rule_results,
+    )
+
+    assert len(result.explanations) == 2
+
+    assert result.explanations[0].rule_id == "ML_MODEL"
+    assert result.explanations[1].rule_id == "URL_IP_ADDRESS"
+
+
+def test_generate_explanation_ignores_unknown_rules():
+    service = ExplainabilityService()
+
+    rule_results = [
+        create_rule_result(
+            "UNKNOWN_RULE",
+            triggered=True,
+            observations=["unknown"],
+        ),
+        create_rule_result(
+            "HEADER_DMARC_FAILURE",
+            triggered=True,
+            observations=["dmarc_status=fail"],
+        ),
+    ]
+
+    result = service.generate_explanation(
+        risk_score=61.0,
+        ml_phishing_probability=0.75,
+        rule_results=rule_results,
+    )
+
+    assert len(result.explanations) == 2
+
+    assert result.explanations[0].rule_id == "ML_MODEL"
+    assert result.explanations[1].rule_id == "HEADER_DMARC_FAILURE"
+
+
+def test_generate_explanation_preserves_observations():
+    service = ExplainabilityService()
+
+    rule_results = [
+        create_rule_result(
+            "ATTACHMENT_DANGEROUS_EXTENSION",
+            observations=[
+                "filename=invoice.pdf.exe"
+            ],
+        )
+    ]
+
+    result = service.generate_explanation(
+        risk_score=80.0,
+        ml_phishing_probability=0.90,
+        rule_results=rule_results,
+    )
+
+    assert result.explanations[1].observations == [
+        "filename=invoice.pdf.exe"
+    ]
+
+
+def test_generate_explanation_does_not_modify_risk_score():
+    service = ExplainabilityService()
+
+    result = service.generate_explanation(
+        risk_score=43.25,
+        ml_phishing_probability=0.55,
+        rule_results=[],
+    )
+
+    assert result.risk_score == 43.25
+
+
+def test_generate_explanation_preserves_rule_result_order():
+    service = ExplainabilityService()
+
+    rule_results = [
+        create_rule_result(
+            "URL_ENCODING",
+            observations=[
+                "url=https://example.com/login%20now"
+            ],
+        ),
+        create_rule_result(
+            "HEADER_SPF_FAILURE",
+            observations=["spf_status=fail"],
+        ),
+        create_rule_result(
+            "ATTACHMENT_DOUBLE_EXTENSION",
+            observations=["filename=invoice.pdf.exe"],
+        ),
+    ]
+
+    result = service.generate_explanation(
+        risk_score=70.0,
+        ml_phishing_probability=0.88,
+        rule_results=rule_results,
+    )
+
+    assert [
+        explanation.rule_id
+        for explanation in result.explanations
+    ] == [
+        "ML_MODEL",
+        "URL_ENCODING",
+        "HEADER_SPF_FAILURE",
+        "ATTACHMENT_DOUBLE_EXTENSION",
+    ]
+
+
+def test_generate_explanation_is_deterministic():
+    service = ExplainabilityService()
+
+    rule_results = [
+        create_rule_result(
+            "HEADER_DMARC_FAILURE",
+            observations=["dmarc_status=fail"],
+        ),
+        create_rule_result(
+            "URL_SUSPICIOUS_CHARACTERS",
+            observations=["url=https://example.com/@login"],
+        ),
+    ]
+
+    first = service.generate_explanation(
+        risk_score=66.5,
+        ml_phishing_probability=0.81,
+        rule_results=rule_results,
+    )
+
+    second = service.generate_explanation(
+        risk_score=66.5,
+        ml_phishing_probability=0.81,
+        rule_results=rule_results,
+    )
+
+    assert first == second
+
+
+def test_generate_explanation_rejects_invalid_ml_probability():
+    service = ExplainabilityService()
+
+    with pytest.raises(
+        ValueError,
+        match="ML phishing probability must be between 0.0 and 1.0.",
+    ):
+        service.generate_explanation(
+            risk_score=50.0,
+            ml_phishing_probability=1.5,
+            rule_results=[],
+        )
