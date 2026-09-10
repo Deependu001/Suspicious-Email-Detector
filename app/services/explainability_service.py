@@ -99,6 +99,12 @@ class ExplainabilityService:
         },
     }
 
+    EXPLANATION_CATEGORY_ORDER = {
+        "HEADER": 0,
+        "URL": 1,
+        "ATTACHMENT": 2,
+    }
+
     def explain_rule(
         self,
         rule_result: RuleResult,
@@ -154,6 +160,33 @@ class ExplainabilityService:
             ],
         )
 
+    def _sort_explanations(
+        self,
+        explanations: list[Explanation],
+    ) -> list[Explanation]:
+        """Return explanations in deterministic category/rule order."""
+
+        rule_order = {
+            rule_id: index
+            for index, rule_id in enumerate(
+                self.RULE_EXPLANATIONS
+            )
+        }
+
+        return sorted(
+            explanations,
+            key=lambda explanation: (
+                self.EXPLANATION_CATEGORY_ORDER.get(
+                    explanation.category,
+                    len(self.EXPLANATION_CATEGORY_ORDER),
+                ),
+                rule_order.get(
+                    explanation.rule_id,
+                    len(rule_order),
+                ),
+            ),
+        )
+
     def generate_explanation(
         self,
         risk_score: float,
@@ -166,13 +199,22 @@ class ExplainabilityService:
             ml_phishing_probability
         )
 
-        explanations = [ml_explanation]
+        rule_explanations = []
 
         for rule_result in rule_results:
             explanation = self.explain_rule(rule_result)
 
             if explanation is not None:
-                explanations.append(explanation)
+                rule_explanations.append(explanation)
+
+        ordered_rule_explanations = self._sort_explanations(
+            rule_explanations
+        )
+
+        explanations = [
+            ml_explanation,
+            *ordered_rule_explanations,
+        ]
 
         return ExplainabilityResult(
             risk_score=risk_score,
