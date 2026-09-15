@@ -114,6 +114,41 @@ def build_mock_pipeline() -> tuple[
     )
 
 
+def configure_non_ml_components(
+    url_analyzer: Mock,
+    header_analyzer: Mock,
+    attachment_analyzer: Mock,
+    rule_engine: Mock,
+    scoring_service: Mock,
+    explainability_service: Mock,
+    email: EmailData,
+    risk_score: float,
+    probability: float,
+) -> list[URLAnalysis]:
+    url_analyses = [
+        create_url_analysis(url)
+        for url in email.urls
+    ]
+
+    url_analyzer.analyze.side_effect = url_analyses
+    header_analyzer.analyze.return_value = create_header_analysis()
+    attachment_analyzer.analyze.return_value = (
+        create_attachment_analysis()
+    )
+    rule_engine.evaluate.return_value = []
+
+    scoring_service.calculate.return_value = risk_score
+
+    explainability_service.generate_explanation.return_value = (
+        create_explainability_result(
+            risk_score=risk_score,
+            probability=probability,
+        )
+    )
+
+    return url_analyses
+
+
 def test_pipeline_orchestrates_components_in_expected_order():
     (
         pipeline,
@@ -431,3 +466,76 @@ def test_pipeline_returns_pipeline_result():
     result = pipeline.analyze(email)
 
     assert result.__class__.__name__ == "PipelineResult"
+
+
+def test_pipeline_passes_ml_probability_unchanged_to_scoring():
+    (
+        pipeline,
+        ml_service,
+        url_analyzer,
+        header_analyzer,
+        attachment_analyzer,
+        rule_engine,
+        scoring_service,
+        explainability_service,
+    ) = build_mock_pipeline()
+
+    email = create_email()
+    probability = 0.9375
+
+    ml_service.predict_phishing_probability.return_value = probability
+
+    configure_non_ml_components(
+        url_analyzer=url_analyzer,
+        header_analyzer=header_analyzer,
+        attachment_analyzer=attachment_analyzer,
+        rule_engine=rule_engine,
+        scoring_service=scoring_service,
+        explainability_service=explainability_service,
+        email=email,
+        risk_score=75.0,
+        probability=probability,
+    )
+
+    pipeline.analyze(email)
+
+    scoring_service.calculate.assert_called_once_with(
+        ScoringInput(
+            ml_phishing_probability=probability,
+            rule_results=[],
+        )
+    )
+
+
+def test_pipeline_preserves_ml_probability_in_result():
+    (
+        pipeline,
+        ml_service,
+        url_analyzer,
+        header_analyzer,
+        attachment_analyzer,
+        rule_engine,
+        scoring_service,
+        explainability_service,
+    ) = build_mock_pipeline()
+
+    email = create_email()
+    probability = 0.1234
+
+    ml_service.predict_phishing_probability.return_value = probability
+
+    configure_non_ml_components(
+        url_analyzer=url_analyzer,
+        header_analyzer=header_analyzer,
+        attachment_analyzer=attachment_analyzer,
+        rule_engine=rule_engine,
+        scoring_service=scoring_service,
+        explainability_service=explainability_service,
+        email=email,
+        risk_score=15.0,
+        probability=probability,
+    )
+
+    result = pipeline.analyze(email)
+
+    assert result.ml_phishing_probability == probability
