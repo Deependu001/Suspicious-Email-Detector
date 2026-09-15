@@ -539,3 +539,158 @@ def test_pipeline_preserves_ml_probability_in_result():
     result = pipeline.analyze(email)
 
     assert result.ml_phishing_probability == probability
+
+
+def test_pipeline_propagates_url_analysis_to_rule_engine():
+    (
+        pipeline,
+        ml_service,
+        url_analyzer,
+        header_analyzer,
+        attachment_analyzer,
+        rule_engine,
+        scoring_service,
+        explainability_service,
+    ) = build_mock_pipeline()
+
+    email = create_email()
+
+    url_analyses = [
+        create_url_analysis(url)
+        for url in email.urls
+    ]
+    header_analysis = create_header_analysis()
+    attachment_analysis = create_attachment_analysis()
+
+    ml_service.predict_phishing_probability.return_value = 0.5
+    url_analyzer.analyze.side_effect = url_analyses
+    header_analyzer.analyze.return_value = header_analysis
+    attachment_analyzer.analyze.return_value = attachment_analysis
+    rule_engine.evaluate.return_value = []
+    scoring_service.calculate.return_value = 35.0
+    explainability_service.generate_explanation.return_value = (
+        create_explainability_result(
+            risk_score=35.0,
+            probability=0.5,
+        )
+    )
+
+    result = pipeline.analyze(email)
+
+    assert result.url_analyses == url_analyses
+
+    rule_engine.evaluate.assert_called_once_with(
+        email=email,
+        url_analyses=url_analyses,
+        header_analysis=header_analysis,
+        attachment_analysis=attachment_analysis,
+    )
+
+
+def test_pipeline_propagates_header_analysis_to_rule_engine_and_result():
+    (
+        pipeline,
+        ml_service,
+        url_analyzer,
+        header_analyzer,
+        attachment_analyzer,
+        rule_engine,
+        scoring_service,
+        explainability_service,
+    ) = build_mock_pipeline()
+
+    email = create_email()
+
+    url_analyses = [
+        create_url_analysis(url)
+        for url in email.urls
+    ]
+    header_analysis = HeaderAnalysis(
+        from_present=True,
+        from_domain="example.com",
+        reply_to_present=True,
+        reply_to_domain="evil.example",
+        from_reply_to_domain_mismatch=True,
+    )
+    attachment_analysis = create_attachment_analysis()
+
+    ml_service.predict_phishing_probability.return_value = 0.5
+    url_analyzer.analyze.side_effect = url_analyses
+    header_analyzer.analyze.return_value = header_analysis
+    attachment_analyzer.analyze.return_value = attachment_analysis
+    rule_engine.evaluate.return_value = []
+    scoring_service.calculate.return_value = 35.0
+    explainability_service.generate_explanation.return_value = (
+        create_explainability_result(
+            risk_score=35.0,
+            probability=0.5,
+        )
+    )
+
+    result = pipeline.analyze(email)
+
+    header_analyzer.analyze.assert_called_once_with(email)
+
+    assert result.header_analysis == header_analysis
+
+    rule_engine.evaluate.assert_called_once_with(
+        email=email,
+        url_analyses=url_analyses,
+        header_analysis=header_analysis,
+        attachment_analysis=attachment_analysis,
+    )
+
+
+def test_pipeline_propagates_attachment_analysis_to_rule_engine_and_result():
+    (
+        pipeline,
+        ml_service,
+        url_analyzer,
+        header_analyzer,
+        attachment_analyzer,
+        rule_engine,
+        scoring_service,
+        explainability_service,
+    ) = build_mock_pipeline()
+
+    email = create_email()
+
+    url_analyses = [
+        create_url_analysis(url)
+        for url in email.urls
+    ]
+    header_analysis = create_header_analysis()
+    attachment_analysis = AttachmentAnalysis(
+        attachment_present=True,
+        attachment_count=1,
+        dangerous_extensions=[".exe"],
+        double_extensions=["invoice.pdf.exe"],
+        mime_mismatches=["invoice.pdf"],
+        unusual_filenames=[],
+    )
+
+    ml_service.predict_phishing_probability.return_value = 0.5
+    url_analyzer.analyze.side_effect = url_analyses
+    header_analyzer.analyze.return_value = header_analysis
+    attachment_analyzer.analyze.return_value = attachment_analysis
+    rule_engine.evaluate.return_value = []
+    scoring_service.calculate.return_value = 35.0
+    explainability_service.generate_explanation.return_value = (
+        create_explainability_result(
+            risk_score=35.0,
+            probability=0.5,
+        )
+    )
+
+    result = pipeline.analyze(email)
+
+    attachment_analyzer.analyze.assert_called_once_with(email)
+
+    assert result.attachment_analysis == attachment_analysis
+
+    rule_engine.evaluate.assert_called_once_with(
+        email=email,
+        url_analyses=url_analyses,
+        header_analysis=header_analysis,
+        attachment_analysis=attachment_analysis,
+    )
