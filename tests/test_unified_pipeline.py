@@ -4,7 +4,10 @@ import pytest
 
 from app.models.attachment_models import AttachmentAnalysis
 from app.models.email_models import EmailData
-from app.models.explainability_models import ExplainabilityResult
+from app.models.explainability_models import (
+    Explanation,
+    ExplainabilityResult,
+)
 from app.models.header_models import HeaderAnalysis
 from app.models.rule_models import RuleResult
 from app.models.scoring_models import ScoringInput
@@ -69,12 +72,28 @@ def create_non_triggered_rule_result() -> RuleResult:
 def create_explainability_result(
     risk_score: float = 75.0,
     ml_phishing_probability: float = 0.9,
-    rule_results: list[RuleResult] | None = None,
+    explanations: list[Explanation] | None = None,
 ) -> ExplainabilityResult:
     return ExplainabilityResult(
         risk_score=risk_score,
         ml_phishing_probability=ml_phishing_probability,
-        explanations=[],
+        explanations=(
+            explanations
+            if explanations is not None
+            else [
+                Explanation(
+                    rule_id="ML_MODEL",
+                    category="ML",
+                    message=(
+                        "The ML classifier assigned a high "
+                        "phishing probability of 90.0%."
+                    ),
+                    observations=[
+                        "ml_phishing_probability=0.900000"
+                    ],
+                )
+            ]
+        ),
     )
 
 
@@ -202,7 +221,6 @@ def test_pipeline_passes_score_and_detection_results_to_explainability() -> None
         create_explainability_result(
             risk_score=82.0,
             ml_phishing_probability=0.8,
-            rule_results=rule_results,
         )
     )
 
@@ -409,7 +427,6 @@ def test_pipeline_passes_rule_results_to_scoring_and_explainability() -> None:
         create_explainability_result(
             risk_score=risk_score,
             ml_phishing_probability=ml_probability,
-            rule_results=rule_results,
         )
     )
 
@@ -532,3 +549,108 @@ def test_pipeline_preserves_scoring_result_in_pipeline_contract() -> None:
 
     assert result.ml_phishing_probability == ml_probability
     assert result.risk_score == scoring_result
+
+
+def test_pipeline_preserves_complete_explainability_result() -> None:
+    pipeline = build_mock_pipeline()
+    email = create_email()
+
+    ml_probability = 0.91
+    risk_score = 86.75
+
+    explanations = [
+        Explanation(
+            rule_id="ML_MODEL",
+            category="ML",
+            message=(
+                "The ML classifier assigned a high "
+                "phishing probability of 91.0%."
+            ),
+            observations=[
+                "ml_phishing_probability=0.910000"
+            ],
+        ),
+        Explanation(
+            rule_id="URL_IP_ADDRESS",
+            category="URL",
+            message=(
+                "The email contains a URL that uses an IP address "
+                "instead of a domain name."
+            ),
+            observations=[
+                "url=https://192.168.1.10/login"
+            ],
+        ),
+    ]
+
+    explainability_result = create_explainability_result(
+        risk_score=risk_score,
+        ml_phishing_probability=ml_probability,
+        explanations=explanations,
+    )
+
+    pipeline.ml_inference_service.predict_phishing_probability.return_value = (
+        ml_probability
+    )
+    configure_non_ml_components(pipeline)
+    pipeline.scoring_service.calculate.return_value = risk_score
+    pipeline.explainability_service.generate_explanation.return_value = (
+        explainability_result
+    )
+
+    result = pipeline.analyze(email)
+
+    assert result.explainability == explainability_result
+    assert result.explainability.risk_score == risk_score
+    assert (
+        result.explainability.ml_phishing_probability
+        == ml_probability
+    )
+    assert result.explainability.explanations == explanations
+
+
+def test_pipeline_passes_complete_context_to_explainability() -> None:
+    pipeline = build_mock_pipeline()
+    email = create_email()
+
+    ml_probability = 0.684321
+    risk_score = 71.2468
+
+    rule_results = [
+        create_rule_result(),
+        create_non_triggered_rule_result(),
+        RuleResult(
+            rule_id="HEADER_SPF_FAILURE",
+            description="An observed SPF authentication result is fail",
+            triggered=True,
+            observations=["spf_status=fail"],
+        ),
+    ]
+
+    pipeline.ml_inference_service.predict_phishing_probability.return_value = (
+        ml_probability
+    )
+    configure_non_ml_components(
+        pipeline,
+        rule_results=rule_results,
+    )
+    pipeline.scoring_service.calculate.return_value = risk_score
+
+    explainability_result = create_explainability_result(
+        risk_score=risk_score,
+        ml_phishing_probability=ml_probability,
+    )
+
+    pipeline.explainability_service.generate_explanation.return_value = (
+        explainability_result
+    )
+
+    result = pipeline.analyze(email)
+
+    pipeline.explainability_service.generate_explanation.assert_called_once_with(
+        risk_score=risk_score,
+        ml_phishing_probability=ml_probability,
+        rule_results=rule_results,
+    )
+
+    assert result.explainability == explainability_result
