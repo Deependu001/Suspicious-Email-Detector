@@ -40,7 +40,10 @@ def create_authentication_failure_email() -> EmailData:
         urls=[],
         authentication={
             "received_spf": [
-                "fail (example.com: domain of sender@example.com does not designate this host as permitted sender)"
+                (
+                    "fail (example.com: domain of sender@example.com "
+                    "does not designate this host as permitted sender)"
+                )
             ]
         },
     )
@@ -59,6 +62,59 @@ def create_dangerous_attachment_email() -> EmailData:
                 "content_type": "application/octet-stream",
                 "size": 1024,
             }
+        ],
+    )
+
+
+def create_minimal_email() -> EmailData:
+    return EmailData(
+        sender=None,
+        recipients=[],
+        subject=None,
+        plain_text_body=None,
+        html_body=None,
+        urls=[],
+        attachments=[],
+    )
+
+
+def create_multi_url_email() -> EmailData:
+    return EmailData(
+        sender="sender@example.com",
+        recipients=["user@example.com"],
+        subject="Multiple links",
+        plain_text_body=(
+            "Please review these links: "
+            "https://example.com/account "
+            "https://192.168.1.10/login "
+            "https://sub.example.com/reset"
+        ),
+        urls=[
+            "https://example.com/account",
+            "https://192.168.1.10/login",
+            "https://sub.example.com/reset",
+        ],
+    )
+
+
+def create_multi_attachment_email() -> EmailData:
+    return EmailData(
+        sender="sender@example.com",
+        recipients=["user@example.com"],
+        subject="Multiple attachments",
+        plain_text_body="Please review the attached files.",
+        urls=[],
+        attachments=[
+            {
+                "filename": "report.pdf",
+                "content_type": "application/pdf",
+                "size": 2048,
+            },
+            {
+                "filename": "invoice.exe",
+                "content_type": "application/octet-stream",
+                "size": 1024,
+            },
         ],
     )
 
@@ -175,6 +231,116 @@ def test_end_to_end_explainability_matches_pipeline_outputs() -> None:
 def test_end_to_end_pipeline_is_deterministic_for_same_email() -> None:
     pipeline = UnifiedPipeline()
     email = create_suspicious_url_email()
+
+    first_result = pipeline.analyze(email)
+    second_result = pipeline.analyze(email)
+
+    assert first_result == second_result
+
+
+def test_edge_case_minimal_email_produces_valid_pipeline_contract() -> None:
+    pipeline = UnifiedPipeline()
+    email = create_minimal_email()
+
+    result = pipeline.analyze(email)
+
+    assert isinstance(result, PipelineResult)
+    assert result.email == email
+    assert 0.0 <= result.ml_phishing_probability <= 1.0
+    assert result.url_analyses == []
+    assert result.header_analysis is not None
+    assert result.attachment_analysis is not None
+    assert isinstance(result.rule_results, list)
+    assert 0.0 <= result.risk_score <= 100.0
+    assert result.explainability is not None
+
+
+def test_edge_case_multiple_urls_are_all_preserved_in_pipeline_result() -> None:
+    pipeline = UnifiedPipeline()
+    email = create_multi_url_email()
+
+    result = pipeline.analyze(email)
+
+    assert len(result.url_analyses) == len(email.urls)
+
+    analyzed_urls = [
+        analysis.original_url
+        for analysis in result.url_analyses
+    ]
+
+    assert analyzed_urls == email.urls
+
+    ip_url_analyses = [
+        analysis
+        for analysis in result.url_analyses
+        if analysis.has_ip_address
+    ]
+
+    assert len(ip_url_analyses) == 1
+    assert ip_url_analyses[0].original_url == (
+        "https://192.168.1.10/login"
+    )
+
+
+def test_edge_case_multiple_attachments_are_all_preserved() -> None:
+    pipeline = UnifiedPipeline()
+    email = create_multi_attachment_email()
+
+    result = pipeline.analyze(email)
+
+    assert len(result.attachment_analysis.attachments) == 2
+
+    analyzed_filenames = [
+        attachment.filename
+        for attachment in result.attachment_analysis.attachments
+    ]
+
+    assert analyzed_filenames == [
+        "report.pdf",
+        "invoice.exe",
+    ]
+
+    triggered_rule_ids = {
+        rule.rule_id
+        for rule in result.rule_results
+        if rule.triggered
+    }
+
+    assert "ATTACHMENT_DANGEROUS_EXTENSION" in triggered_rule_ids
+
+
+def test_edge_case_pipeline_result_components_remain_consistent() -> None:
+    pipeline = UnifiedPipeline()
+    email = create_multi_url_email()
+
+    result = pipeline.analyze(email)
+
+    assert result.email == email
+    assert len(result.url_analyses) == len(email.urls)
+
+    assert result.explainability.risk_score == result.risk_score
+    assert (
+        result.explainability.ml_phishing_probability
+        == result.ml_phishing_probability
+    )
+
+    assert 0.0 <= result.ml_phishing_probability <= 1.0
+    assert 0.0 <= result.risk_score <= 100.0
+
+    assert all(
+        isinstance(rule.triggered, bool)
+        for rule in result.rule_results
+    )
+
+    assert all(
+        explanation.rule_id
+        for explanation in result.explainability.explanations
+    )
+
+
+def test_edge_case_pipeline_is_deterministic_for_minimal_email() -> None:
+    pipeline = UnifiedPipeline()
+    email = create_minimal_email()
 
     first_result = pipeline.analyze(email)
     second_result = pipeline.analyze(email)
