@@ -14,7 +14,7 @@ from app.models.email_models import (
 
 class EmailParser:
     """
-    Parses .eml files and converts them into our structured EmailData model.
+    Parses .eml files and raw email content into EmailData.
     """
 
     def parse_file(self, file_path: str | Path) -> EmailData:
@@ -38,6 +38,33 @@ class EmailParser:
 
         with path.open("rb") as email_file:
             message = BytesParser(policy=policy.default).parse(email_file)
+
+        return self._build_email_data(message)
+
+    def parse_raw_email(self, raw_email: str) -> EmailData:
+        """
+        Parse raw RFC 5322 email content.
+
+        Args:
+            raw_email: Raw email content containing headers and body.
+
+        Returns:
+            EmailData containing extracted email metadata.
+
+        Raises:
+            TypeError: If raw_email is not a string.
+            ValueError: If raw_email is empty or whitespace-only.
+        """
+
+        if not isinstance(raw_email, str):
+            raise TypeError("raw_email must be a string.")
+
+        if not raw_email.strip():
+            raise ValueError("raw_email must not be empty.")
+
+        message = BytesParser(policy=policy.default).parsebytes(
+            raw_email.encode("utf-8")
+        )
 
         return self._build_email_data(message)
 
@@ -107,8 +134,8 @@ class EmailParser:
         """
         Extract authentication-related headers from an email message.
 
-        This method only extracts authentication-related headers that
-        are actually present in the email.
+        This method only extracts authentication-related headers that are
+        actually present in the email.
 
         It does NOT independently verify:
         - SPF
@@ -429,7 +456,7 @@ class EmailParser:
 
             [
                 "bob@example.com",
-                "alice@example.com"
+                "alice@example.com",
             ]
         """
 
