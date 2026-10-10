@@ -10,3 +10,4 @@ email-validator
 joblib
 pytest
 httpx
+streamlit
