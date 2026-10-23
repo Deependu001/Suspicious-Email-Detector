@@ -1,5 +1,6 @@
+import re
 from ipaddress import ip_address
-from urllib.parse import urlparse, unquote
+from urllib.parse import unquote, urlparse
 
 import tldextract
 
@@ -7,12 +8,7 @@ from app.models.url_models import URLAnalysis
 
 
 class URLAnalyzer:
-    """
-    Analyze structural and security-related characteristics of URLs.
-
-    This component extracts URL features and indicators only.
-    It does not assign a phishing score, verdict, or final risk level.
-    """
+    """Extract security-related indicators from URLs."""
 
     UNUSUAL_PORTS = {
         21,
@@ -28,20 +24,11 @@ class URLAnalyzer:
         8443,
     }
 
-    SUSPICIOUS_CHARACTERS = {
-        "@",
-        "\\",
-        "<",
-        ">",
-        '"',
-        "'",
-    }
+    SUSPICIOUS_CHARACTERS = {"@", "\\", "<", ">", '"', "'"}
 
     @staticmethod
     def analyze(url: str) -> URLAnalysis:
-        """
-        Analyze a single URL and return structured URL characteristics.
-        """
+        """Analyze a URL without allowing malformed syntax to crash callers."""
 
         if not isinstance(url, str):
             raise TypeError("URL must be a string.")
@@ -52,22 +39,50 @@ class URLAnalyzer:
             raise ValueError("URL cannot be empty.")
 
         normalized_url = original_url
-
-        parsed = urlparse(normalized_url)
-
-        scheme = parsed.scheme.lower() or None
-        hostname = parsed.hostname.lower() if parsed.hostname else None
-
-        port = None
+        suspicious_indicators: list[str] = []
 
         try:
-            port = parsed.port
-        except ValueError:
-            port = None
+            parsed = urlparse(normalized_url)
+            scheme = parsed.scheme.lower() or None
+            hostname = parsed.hostname.lower() if parsed.hostname else None
+            path = parsed.path or None
+            query = parsed.query or None
+            fragment = parsed.fragment or None
 
-        path = parsed.path or None
-        query = parsed.query or None
-        fragment = parsed.fragment or None
+            port = None
+            port_is_invalid = False
+
+            if parsed.netloc:
+                try:
+                    port = parsed.port
+                except ValueError:
+                    port_is_invalid = True
+
+                port_text = URLAnalyzer._extract_port_text(
+                    parsed.netloc,
+                    hostname,
+                )
+
+                if port_text is not None:
+                    if (
+                        not port_text.isascii()
+                        or not port_text.isdecimal()
+                        or not 1 <= int(port_text) <= 65535
+                    ):
+                        port_is_invalid = True
+
+            if port_is_invalid:
+                suspicious_indicators.append("invalid_url_syntax")
+
+        except ValueError:
+            scheme = URLAnalyzer._extract_scheme(normalized_url)
+            hostname = None
+            port = None
+            path = None
+            query = None
+            fragment = None
+            port_is_invalid = False
+            suspicious_indicators.append("invalid_url_syntax")
 
         domain = None
         registered_domain = None
@@ -75,37 +90,39 @@ class URLAnalyzer:
         tld = None
 
         if hostname:
-            extracted = tldextract.extract(hostname)
-
-            domain = extracted.domain or None
-            registered_domain = (
-                extracted.top_domain_under_public_suffix or None
-            )
-            subdomain = extracted.subdomain or None
-            tld = extracted.suffix or None
+            try:
+                extracted = tldextract.extract(hostname)
+                domain = extracted.domain or None
+                registered_domain = (
+                    extracted.top_domain_under_public_suffix or None
+                )
+                subdomain = extracted.subdomain or None
+                tld = extracted.suffix or None
+            except (TypeError, ValueError):
+                suspicious_indicators.append("invalid_url_syntax")
 
         has_ip_address = URLAnalyzer._is_ip_address(hostname)
-
         has_unusual_port = (
             port is not None and port in URLAnalyzer.UNUSUAL_PORTS
         )
-
         has_suspicious_characters = any(
             character in original_url
             for character in URLAnalyzer.SUSPICIOUS_CHARACTERS
         )
-
         has_encoding = URLAnalyzer._has_encoding(original_url)
-
         has_subdomain = bool(subdomain)
 
-        suspicious_indicators = URLAnalyzer._build_indicators(
+        indicators = URLAnalyzer._build_indicators(
             has_ip_address=has_ip_address,
             has_unusual_port=has_unusual_port,
             has_suspicious_characters=has_suspicious_characters,
             has_encoding=has_encoding,
             has_subdomain=has_subdomain,
         )
+
+        for indicator in indicators:
+            if indicator not in suspicious_indicators:
+                suspicious_indicators.append(indicator)
 
         return URLAnalysis(
             original_url=original_url,
@@ -130,11 +147,44 @@ class URLAnalyzer:
         )
 
     @staticmethod
-    def _is_ip_address(hostname: str | None) -> bool:
-        """
-        Determine whether the hostname is an IPv4 or IPv6 address.
-        """
+    def _extract_scheme(url: str) -> str | None:
+        """Recover a syntactically recognizable scheme from malformed input."""
 
+        match = re.match(r"^([A-Za-z][A-Za-z0-9+.-]*):", url)
+        return match.group(1).lower() if match else None
+
+    @staticmethod
+    def _extract_port_text(
+        netloc: str,
+        hostname: str | None,
+    ) -> str | None:
+        """Extract raw port text, including values rejected by urlparse."""
+
+        if not hostname:
+            return None
+
+        authority = netloc.rsplit("@", 1)[-1]
+
+        if authority.startswith("["):
+            closing_bracket = authority.find("]")
+
+            if closing_bracket == -1:
+                return None
+
+            suffix = authority[closing_bracket + 1:]
+
+            if suffix.startswith(":"):
+                return suffix[1:]
+
+            return None
+
+        if ":" not in authority:
+            return None
+
+        return authority.rsplit(":", 1)[1]
+
+    @staticmethod
+    def _is_ip_address(hostname: str | None) -> bool:
         if not hostname:
             return False
 
@@ -146,13 +196,6 @@ class URLAnalyzer:
 
     @staticmethod
     def _has_encoding(url: str) -> bool:
-        """
-        Detect percent-encoded content in a URL.
-
-        The URL is considered encoded when percent-decoding changes
-        its content.
-        """
-
         try:
             return unquote(url) != url
         except Exception:
@@ -160,18 +203,13 @@ class URLAnalyzer:
 
     @staticmethod
     def _build_indicators(
+        *,
         has_ip_address: bool,
         has_unusual_port: bool,
         has_suspicious_characters: bool,
         has_encoding: bool,
         has_subdomain: bool,
     ) -> list[str]:
-        """
-        Build descriptive URL indicators from extracted characteristics.
-
-        These are descriptive signals only. No risk score is assigned.
-        """
-
         indicators = []
 
         if has_ip_address:
