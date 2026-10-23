@@ -38,3 +38,19 @@ def test_extremely_long_invalid_port_does_not_raise() -> None:
 
     assert result.original_url == url
     assert "invalid_url_syntax" in result.suspicious_indicators
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.com:999999999999999999999999/path",
+        "https://[2001:db8::1",
+        "https://example.com/%ZZ",
+        "https://example.com/\x00login",
+    ],
+)
+def test_unusual_url_input_does_not_crash(url: str) -> None:
+    result = URLAnalyzer.analyze(url)
+
+    assert result.original_url == url
+    assert result.normalized_url == url
+    assert result.url_length == len(url)
