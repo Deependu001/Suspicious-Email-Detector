@@ -1,8 +1,13 @@
+import os
+
 import requests
 import streamlit as st
 
 
-DEFAULT_API_URL = "http://127.0.0.1:8000"
+DEFAULT_API_URL = os.environ.get(
+    "EMAIL_DETECTOR_API_URL",
+    "http://127.0.0.1:8000",
+)
 REQUEST_TIMEOUT_SECONDS = 60
 
 

@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import sqlite3
 from contextlib import closing
@@ -17,6 +18,11 @@ DEFAULT_DATABASE_PATH = (
     / "history.sqlite3"
 )
 
+DATABASE_PATH = os.environ.get(
+    "EMAIL_DETECTOR_DATABASE_PATH",
+    str(DEFAULT_DATABASE_PATH),
+)
+
 URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
 
 
@@ -27,10 +33,10 @@ class HistoryService:
         self,
         database_path: str | Path | None = None,
     ) -> None:
-        self.database_path = (
-            Path(database_path)
+        self.database_path = Path(
+            database_path
             if database_path is not None
-            else DEFAULT_DATABASE_PATH
+            else DATABASE_PATH
         )
 
         self.initialize_database()
