@@ -2478,6 +2478,32 @@
   background: #f3b77e;
 }
 
+/* Keep compact metadata and sidebar health indicators visually aligned. */
+.forensic-meta-strip {
+  align-items: center;
+  padding: 14px 20px;
+  margin-top: 16px;
+}
+
+.meta-strip-item {
+  min-width: 0;
+  justify-content: center;
+}
+
+.engine-telemetry-item {
+  min-width: 0;
+  gap: 8px;
+}
+
+.engine-telemetry-name {
+  min-width: 0;
+}
+
+.engine-status-dot {
+  flex: 0 0 6px;
+  margin-left: auto;
+}
+
 /* ML probability card follows the warm analysis palette. */
 .soc-shell .ml-meter-box {
   background: #fffaf4;
