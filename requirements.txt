@@ -2,7 +2,9 @@ fastapi
 uvicorn[standard]
 pandas
 numpy
-scikit-learn
+# The committed Joblib model was trained and serialized with 1.9.0.
+# Keep the inference runtime compatible with that artifact.
+scikit-learn==1.9.0
 beautifulsoup4
 tldextract
 python-multipart

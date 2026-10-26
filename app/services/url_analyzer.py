@@ -7,6 +7,15 @@ import tldextract
 from app.models.url_models import URLAnalysis
 
 
+# Use tldextract's bundled public-suffix snapshot. The default extractor may
+# try to update and lock a cache beside the installed package, which is often
+# read-only in local and container deployments.
+TLD_EXTRACTOR = tldextract.TLDExtract(
+    suffix_list_urls=(),
+    cache_dir=None,
+)
+
+
 class URLAnalyzer:
     """Extract security-related indicators from URLs."""
 
@@ -91,7 +100,7 @@ class URLAnalyzer:
 
         if hostname:
             try:
-                extracted = tldextract.extract(hostname)
+                extracted = TLD_EXTRACTOR(hostname)
                 domain = extracted.domain or None
                 registered_domain = (
                     extracted.top_domain_under_public_suffix or None

@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+:root {
+  /* Typography */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Warm, high-contrast portfolio palette. */
+  --bg-deep: #fff7ed;
+  --bg-canvas: #fff1e3;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fff4e8;
+  --bg-card-subtle: #fff0e0;
+
+  /* Glassmorphism & Borders */
+  --border-subtle: #f3cda9;
+  --border-glass: #f6b982;
+  --border-glass-hover: #e85d04;
+  --border-active: #ea6a16;
+
+  /* Primary orange accents (legacy variable names retained for component compatibility). */
+  --cyan-400: #e85d04;
+  --cyan-500: #c2410c;
+  --cyan-glow: rgba(234, 88, 12, 0.18);
+  --sky-400: #f97316;
+  --sky-500: #ea580c;
+  --sky-glow: rgba(249, 115, 22, 0.18);
+  --blue-500: #ea580c;
+  --indigo-500: #c2410c;
+
+  /* Threat Severity Tones */
+  --threat-critical: #ef4444;
+  --threat-critical-bg: rgba(239, 68, 68, 0.12);
+  --threat-critical-border: rgba(239, 68, 68, 0.35);
+  --threat-critical-glow: rgba(239, 68, 68, 0.3);
+
+  --threat-high: #f97316;
+  --threat-high-bg: rgba(249, 115, 22, 0.12);
+  --threat-high-border: rgba(249, 115, 22, 0.35);
+  --threat-high-glow: rgba(249, 115, 22, 0.25);
+
+  --threat-warn: #eab308;
+  --threat-warn-bg: rgba(234, 179, 8, 0.12);
+  --threat-warn-border: rgba(234, 179, 8, 0.32);
+  --threat-warn-glow: rgba(234, 179, 8, 0.22);
+
+  --threat-safe: #10b981;
+  --threat-safe-bg: rgba(16, 185, 129, 0.12);
+  --threat-safe-border: rgba(16, 185, 129, 0.32);
+  --threat-safe-glow: rgba(16, 185, 129, 0.22);
+
+  /* Text & Foreground */
+  --text-primary: #24201d;
+  --text-secondary: #6f3e20;
+  --text-muted: #9a6240;
+  --text-disabled: #c79b7e;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 14px -8px rgba(76, 49, 29, 0.22);
+  --shadow-lg: 0 16px 32px -20px rgba(76, 49, 29, 0.28);
+  --shadow-glow-cyan: 0 10px 22px -14px rgba(234, 88, 12, 0.42);
+  --shadow-glow-red: 0 0 28px -4px rgba(239, 68, 68, 0.35);
+  --shadow-glow-green: 0 0 24px -4px rgba(16, 185, 129, 0.35);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background-color: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-deep);
+  background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(251, 146, 60, 0.16), transparent);
+  background-attachment: fixed;
+  overflow-x: hidden;
+}
+
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+button:focus-visible, input:focus-visible, textarea:focus-visible {
+  outline: 2px solid #ea580c;
+  outline-offset: 2px;
+}
+
+::selection {
+  background: #fed7aa;
+  color: #3b2413;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fff0e0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e9a673;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ea580c;
+}

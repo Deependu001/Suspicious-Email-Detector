@@ -1,3 +1,5 @@
+import tldextract
+
 from app.services.url_analyzer import URLAnalyzer
 
 
@@ -22,6 +24,20 @@ def test_analyze_standard_https_url():
     assert result.has_encoding is False
     assert result.has_subdomain is False
     assert result.suspicious_indicators == []
+
+
+def test_analysis_does_not_use_tldextract_default_cache(monkeypatch):
+    """Domain extraction must work when package directories are read-only."""
+
+    def unexpected_default_extractor(*args, **kwargs):
+        raise AssertionError("The default tldextract extractor was used.")
+
+    monkeypatch.setattr(tldextract, "extract", unexpected_default_extractor)
+
+    result = URLAnalyzer.analyze("https://secure.example.com/login")
+
+    assert result.registered_domain == "example.com"
+    assert result.subdomain == "secure"
 
 
 def test_detect_ip_address_url():
